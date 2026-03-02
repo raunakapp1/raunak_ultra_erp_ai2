@@ -29,7 +29,7 @@ def login_page():
     user = st.selectbox("Select User", staff_names)
     password = st.text_input("Password", type="password")
 
-    if st.button("Login"):
+    if st.button("Login", use_container_width=True):
         if st.session_state.staff_db[user]["password"] == password:
             st.session_state.login = True
             st.session_state.user = user
@@ -49,29 +49,16 @@ def admin_dashboard():
 
     c1,c2,c3,c4 = st.columns(4)
     c1.metric("👥 Guests", len(st.session_state.guest_db))
-    c2.metric("💰 Revenue", f"₹ {sum(x['bill'] for x in st.session_state.order_db)}")
+    c2.metric("💰 Revenue", f"₹ {sum(x['bill'] for x in st.session_state.order_db):,.2f}")
     c3.metric("🧾 Orders", len(st.session_state.order_db))
     c4.metric("👨‍💼 Staff", len(st.session_state.staff_db))
 
-    st.divider()
-
-    st.subheader("🤖 AI Systems Status")
-    for ai in ["Revenue Forecast","Fraud Detection","Dynamic Pricing","Offer Generator","Staff AI","Retarget AI"]:
-        st.success(f"✅ {ai} AI : ACTIVE")
-
-    st.divider()
-
-    st.subheader("📈 Business Health Score")
-    st.progress(min(100, len(st.session_state.order_db) * 10))
+    st.progress(min(100, len(st.session_state.order_db)*4))
 
     st.caption("Created by – RJRAUNAK")
 
 # ---------- STAFF PANEL ----------
 def staff_panel():
-    if st.session_state.role != "Admin":
-        st.error("❌ Only Admin Allowed")
-        return
-
     st.title("👨‍💼 Staff Management")
 
     name = st.text_input("Login Username")
@@ -83,7 +70,7 @@ def staff_panel():
         default=["Dashboard"]
     )
 
-    if st.button("Create Staff"):
+    if st.button("Create Staff", use_container_width=True):
         st.session_state.staff_db[name.lower()] = {
             "password": password,
             "role": role,
@@ -92,60 +79,85 @@ def staff_panel():
         st.success(f"✅ Staff {name} Created")
 
     st.divider()
-    st.subheader("📋 Active Staff")
-    st.dataframe(pd.DataFrame(st.session_state.staff_db).T)
+    st.dataframe(pd.DataFrame(st.session_state.staff_db).T, use_container_width=True)
 
 # ---------- GUEST ENTRY ----------
 def guest_entry():
-    st.title("👥 Guest Entry (No Billing)")
+    st.title("👥 Guest Entry — Ultra Advanced")
 
-    name = st.text_input("Guest Name")
-    visit = st.selectbox("Visit Type",["Dine In","VIP","Party","Walk-in"])
-    pax = st.number_input("PAX",1,50,1)
+    c1,c2,c3 = st.columns(3)
 
-    if st.button("Save Guest"):
+    with c1:
+        category = st.selectbox("Category",[
+            "Swiggy","Zomato","EazyDinner","Dine In","Walk-in",
+            "Party","Holi Buffet","VIP","Other"
+        ])
+        guest = st.text_input("Guest Name")
+
+    with c2:
+        mobile = st.text_input("Mobile Number")
+        pax = st.number_input("Number of PAX",1,100,1)
+
+    with c3:
+        date = st.date_input("Visit Date",datetime.date.today())
+        time = datetime.datetime.now().strftime("%H:%M:%S")
+
+    if st.button("Save Guest Entry", use_container_width=True):
         st.session_state.guest_db.append({
-            "guest":name,"visit":visit,"pax":pax,
-            "by":st.session_state.user,
-            "time":datetime.datetime.now()
+            "date":date,"time":time,"category":category,
+            "guest":guest,"mobile":mobile,"pax":pax,
+            "by":st.session_state.user
         })
         st.success("✅ Guest Entry Saved")
 
 # ---------- ORDER ENTRY ----------
 def order_entry():
-    st.title("🧾 Billing / Order Entry")
+    st.title("🧾 Order Entry — Ultra Billing System")
 
-    source = st.selectbox("Source",["Dine In","Swiggy","Zomato","Takeaway"])
-    bill = st.number_input("Bill Amount",0,100000,0)
-    payment = st.selectbox("Payment Mode",["Cash","UPI","Card","Razorpay"])
+    c1,c2,c3 = st.columns(3)
 
-    if st.button("Save Order"):
+    with c1:
+        name = st.text_input("Guest Name")
+        pax = st.number_input("PAX",1,50,1)
+
+    with c2:
+        mobile = st.text_input("Mobile Number")
+        payment = st.selectbox("Payment Mode",["Cash","UPI","Card","Razorpay"])
+
+    with c3:
+        bill_no = st.text_input("Bill Number")
+        bill_amt = st.number_input("Bill Amount",0,500000,0)
+
+    date = st.date_input("Billing Date",datetime.date.today())
+    time = datetime.datetime.now().strftime("%H:%M:%S")
+
+    if st.button("Save Order", use_container_width=True):
         st.session_state.order_db.append({
-            "source":source,"bill":bill,"payment":payment,
-            "by":st.session_state.user,
-            "time":datetime.datetime.now()
+            "date":date,"time":time,"name":name,"pax":pax,
+            "mobile":mobile,"bill_no":bill_no,
+            "bill":bill_amt,"payment":payment,
+            "by":st.session_state.user
         })
-        st.success("✅ Order Saved")
+        st.success("✅ Order Saved Successfully")
 
 # ---------- REPORTS ----------
 def reports_panel():
-    st.title("📊 Advanced Reports System")
+    st.title("📊 Ultra Advanced Reports")
 
-    tab1,tab2,tab3 = st.tabs(["🧾 Orders","👥 Guests","💼 Staff Performance"])
+    tab1,tab2,tab3 = st.tabs(["🧾 Orders","👥 Guests","👨‍💼 Staff Performance"])
 
     with tab1:
         if st.session_state.order_db:
             df = pd.DataFrame(st.session_state.order_db)
             st.dataframe(df,use_container_width=True)
-            st.download_button("⬇ Download Excel",df.to_excel(index=False),"orders.xlsx")
+            st.metric("Total Sale",f"₹ {df['bill'].sum():,.2f}")
         else:
-            st.warning("No Orders Data")
+            st.warning("No Order Data")
 
     with tab2:
         if st.session_state.guest_db:
             df = pd.DataFrame(st.session_state.guest_db)
             st.dataframe(df,use_container_width=True)
-            st.download_button("⬇ Download Excel",df.to_excel(index=False),"guests.xlsx")
         else:
             st.warning("No Guest Data")
 
@@ -155,17 +167,17 @@ def reports_panel():
             perf = df.groupby("by")["bill"].sum().reset_index()
             st.dataframe(perf,use_container_width=True)
         else:
-            st.warning("No Performance Data")
+            st.warning("No Staff Performance Data")
 
 # ---------- AI PANEL ----------
 def ai_panel():
     st.title("🤖 AI Control Center")
 
-    if st.button("Generate Festival Offer"):
-        st.success("🎉 AI Generated Offer: FLAT 20% OFF")
+    if st.button("Generate Festival Offer",use_container_width=True):
+        st.success("🎉 AI Generated Offer: FLAT 25% OFF")
 
-    if st.button("Optimize Pricing"):
-        st.success("💰 AI Price Optimization Complete")
+    if st.button("Optimize Pricing",use_container_width=True):
+        st.success("💰 AI Price Optimization Completed")
 
 # ---------- MAIN ----------
 if not st.session_state.login:
