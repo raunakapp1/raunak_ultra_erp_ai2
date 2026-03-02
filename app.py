@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import datetime
 
+# ---------------- CONFIG ----------------
 st.set_page_config(page_title="Raunak Ultra ERP AI", layout="wide")
 
-# ---------- SESSION ----------
+# ---------------- SESSION INIT ----------------
 if "login" not in st.session_state:
     st.session_state.login = False
     st.session_state.user = None
@@ -21,11 +22,11 @@ if "guest_db" not in st.session_state:
 if "order_db" not in st.session_state:
     st.session_state.order_db = []
 
-# ---------- LOGIN ----------
+# ---------------- LOGIN ----------------
 def login_page():
     st.markdown("<h2 style='text-align:center'>🔐 Ultra ERP Login</h2>", unsafe_allow_html=True)
-    staff_names = list(st.session_state.staff_db.keys())
-    user = st.selectbox("Select User", staff_names)
+
+    user = st.selectbox("Select User", list(st.session_state.staff_db.keys()))
     password = st.text_input("Password", type="password")
 
     if st.button("Login", use_container_width=True):
@@ -37,43 +38,31 @@ def login_page():
         else:
             st.error("❌ Wrong Password")
 
-# ---------- ACCESS ----------
+# ---------------- ACCESS ----------------
 def has_access(page):
     user = st.session_state.staff_db[st.session_state.user]
     return "ALL" in user["access"] or page in user["access"]
 
-# ---------- DASHBOARD ----------
+# ---------------- DASHBOARD ----------------
 def admin_dashboard():
     st.title("🚀 Ultra ERP AI Dashboard")
 
-    total_rev = sum(x['bill'] for x in st.session_state.order_db)
-    total_orders = len(st.session_state.order_db)
-    total_guests = len(st.session_state.guest_db)
-    avg_bill = round(total_rev / total_orders,2) if total_orders else 0
-
-    c1,c2,c3,c4,c5 = st.columns(5)
-    c1.metric("👥 Guests", total_guests)
-    c2.metric("🧾 Orders", total_orders)
-    c3.metric("💰 Revenue", f"₹ {total_rev:,.2f}")
-    c4.metric("📊 Avg Bill", f"₹ {avg_bill}")
-    c5.metric("👨‍💼 Staff", len(st.session_state.staff_db))
-
-    st.progress(min(100, total_orders*3))
+    c1,c2,c3,c4 = st.columns(4)
+    c1.metric("👥 Guests", len(st.session_state.guest_db))
+    c2.metric("💰 Revenue", f"₹ {sum(x['bill'] for x in st.session_state.order_db):,.2f}")
+    c3.metric("🧾 Orders", len(st.session_state.order_db))
+    c4.metric("👨‍💼 Staff", len(st.session_state.staff_db))
 
     st.divider()
 
-    if st.session_state.order_db:
-        df = pd.DataFrame(st.session_state.order_db)
-        peak_hour = df['time'].str[:2].value_counts().idxmax()
-        top_staff = df.groupby("by")["bill"].sum().idxmax()
+    st.subheader("🤖 AI Modules Status")
+    for ai in ["Revenue Forecast","Fraud Detection","Dynamic Pricing","Offer Generator","Staff AI","Retarget AI"]:
+        st.success(f"✅ {ai} AI : READY")
 
-        c6,c7 = st.columns(2)
-        c6.metric("🔥 Peak Hour", f"{peak_hour}:00")
-        c7.metric("🏆 Top Staff", top_staff)
-
+    st.divider()
     st.caption("Created by – RJRAUNAK")
 
-# ---------- STAFF PANEL ----------
+# ---------------- STAFF PANEL ----------------
 def staff_panel():
     st.title("👨‍💼 Staff Management")
 
@@ -87,19 +76,22 @@ def staff_panel():
     )
 
     if st.button("Create Staff", use_container_width=True):
-        st.session_state.staff_db[name.lower()] = {
-            "password": password,
-            "role": role,
-            "access": access
-        }
-        st.success(f"✅ Staff {name} Created")
+        if name and password:
+            st.session_state.staff_db[name.lower()] = {
+                "password": password,
+                "role": role,
+                "access": access
+            }
+            st.success(f"✅ Staff {name} Created Successfully")
+        else:
+            st.error("❌ Fill all fields")
 
     st.divider()
     st.dataframe(pd.DataFrame(st.session_state.staff_db).T, use_container_width=True)
 
-# ---------- GUEST ENTRY ----------
+# ---------------- GUEST ENTRY ----------------
 def guest_entry():
-    st.title("👥 Guest Entry — Ultra Advanced")
+    st.title("👥 Guest Entry System")
 
     c1,c2,c3 = st.columns(3)
 
@@ -112,10 +104,10 @@ def guest_entry():
 
     with c2:
         mobile = st.text_input("Mobile Number")
-        pax = st.number_input("Number of PAX",1,100,1)
+        pax = st.number_input("PAX",1,100,1)
 
     with c3:
-        date = st.date_input("Visit Date",datetime.date.today())
+        date = st.date_input("Date",datetime.date.today())
         time = datetime.datetime.now().strftime("%H:%M:%S")
 
     if st.button("Save Guest Entry", use_container_width=True):
@@ -126,9 +118,9 @@ def guest_entry():
         })
         st.success("✅ Guest Entry Saved")
 
-# ---------- ORDER ENTRY ----------
+# ---------------- ORDER ENTRY ----------------
 def order_entry():
-    st.title("🧾 Order Entry — Ultra Billing System")
+    st.title("🧾 Order / Billing System")
 
     c1,c2,c3 = st.columns(3)
 
@@ -137,7 +129,7 @@ def order_entry():
         pax = st.number_input("PAX",1,50,1)
 
     with c2:
-        mobile = st.text_input("Mobile Number")
+        mobile = st.text_input("Mobile")
         payment = st.selectbox("Payment Mode",["Cash","UPI","Card","Razorpay"])
 
     with c3:
@@ -156,9 +148,9 @@ def order_entry():
         })
         st.success("✅ Order Saved Successfully")
 
-# ---------- REPORTS ----------
+# ---------------- REPORTS ----------------
 def reports_panel():
-    st.title("📊 Ultra Advanced Reports")
+    st.title("📊 Advanced Reports")
 
     tab1,tab2,tab3 = st.tabs(["🧾 Orders","👥 Guests","👨‍💼 Staff Performance"])
 
@@ -183,27 +175,19 @@ def reports_panel():
             perf = df.groupby("by")["bill"].sum().reset_index()
             st.dataframe(perf,use_container_width=True)
         else:
-            st.warning("No Staff Performance Data")
+            st.warning("No Performance Data")
 
-# ---------- AI PANEL ----------
+# ---------------- AI PANEL ----------------
 def ai_panel():
     st.title("🤖 AI Control Center")
 
-    c1,c2,c3 = st.columns(3)
+    if st.button("Generate Festival Offer",use_container_width=True):
+        st.success("🎉 AI Generated Offer: FLAT 25% OFF")
 
-    with c1:
-        if st.button("🎯 Generate Festival Offer",use_container_width=True):
-            st.success("🎉 AI Generated Offer: FLAT 25% OFF")
+    if st.button("Optimize Pricing",use_container_width=True):
+        st.success("💰 AI Price Optimization Completed")
 
-    with c2:
-        if st.button("💰 Optimize Pricing",use_container_width=True):
-            st.success("Price Optimization Completed")
-
-    with c3:
-        if st.button("📊 Forecast Tomorrow Sale",use_container_width=True):
-            st.success("Tomorrow Sale Prediction: ₹ 75,000")
-
-# ---------- MAIN ----------
+# ---------------- MAIN ROUTER ----------------
 if not st.session_state.login:
     login_page()
     st.stop()
